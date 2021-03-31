@@ -22,40 +22,46 @@ def get_confusion_matrix(y_true, y_predict):
 
 
 def eval_percent(y_true, y_predict, percent):
-    res_pred = np.zeros(y_predict.shape)
-    res_true = np.array(y_true.shape)
     if percent is None:
+        res_pred = np.zeros(y_predict.shape)
         for i, item in enumerate(y_predict):
             if item >= 0.5:
                 res_pred[i] = 1
             else:
                 res_pred[i] = 0
-        res_true = y_true
+
     elif 0 < percent <= 100:
-        raise NotImplementedError
+        new_len = int(len(y_predict) * percent / 100)
+        res_pred = np.zeros(y_predict.shape)
+        indices = y_predict.argsort()[-new_len:][::-1]
+        for i, index in enumerate(indices):
+            res_pred[i] = 1
     else:
         raise ValueError
-    return res_pred, res_true
+    return res_pred, y_true
 
 
 def accuracy_score(y_true, y_predict, percent=None):
     y_predict, y_true = eval_percent(y_true, y_predict, percent)
     res = get_confusion_matrix(y_true, y_predict)
-    accuracy = (res["TP"] + res["TN"]) / (res["TN"] + res["FP"] + res["FN"] + res["TP"])
+    accuracy = (res["TP"] + res["TN"]) / \
+               (res["TN"] + res["FP"] + res["FN"] + res["TP"] if res["TN"] + res["FP"] + res["FN"] + res["TP"]  else inf)
     return accuracy
 
 
 def precision_score(y_true, y_predict, percent=None):
     y_predict, y_true = eval_percent(y_true, y_predict, percent)
     res = get_confusion_matrix(y_true, y_predict)
-    precision = res["TP"] / (res["TP"] + res["FP"])
+    precision = res["TP"] / \
+                (res["TP"] + res["FP"] if res["TP"] + res["FP"] else inf)
     return precision
 
 
 def recall_score(y_true, y_predict, percent=None):
     y_predict, y_true = eval_percent(y_true, y_predict, percent)
     res = get_confusion_matrix(y_true, y_predict)
-    recall = res["TP"] / (res["TP"] + res["FN"])
+    recall = res["TP"] / \
+             (res["TP"] + res["FN"] if res["TP"] + res["FN"] else inf)
     return recall
 
 
@@ -79,8 +85,7 @@ def f1_score(y_true, y_predict, percent=None):
 if __name__ == "__main__":
     file = np.loadtxt('HW2_labels.txt', delimiter=',')
     y_predict, y_true = file[:, :2], file[:, -1]
-    print(y_predict[:, 0])
-    print(accuracy_score(y_true, y_predict[:, 1]))
+    print(accuracy_score(y_true, y_predict[:, 1], 90))
     print(precision_score(y_true, y_predict[:, 1]))
     print(recall_score(y_true, y_predict[:, 1]))
     print(lift_score(y_true, y_predict[:, 1]))
